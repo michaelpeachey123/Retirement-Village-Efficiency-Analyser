@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retirement Village Visit Efficiency Analyser App</title>
+<style>
+  /* Fully offline — no external requests. System font stack only. */
+
+  :root {
+    --bg: #0f1117;
+    --surface: #181c27;
+    --surface2: #1e2435;
+    --border: #2a3048;
+    --accent: #4ade80;
+    --accent2: #f59e0b;
+    --accent3: #60a5fa;
+    --danger: #f87171;
+    --text: #e8eaf0;
+    --text-muted: #7b87a0;
+    --text-dim: #4a5568;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  header {
+    padding: 2rem 2.5rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 120px;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .logo-mark {
+    width: 44px;
+    height: 44px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #0f1117;
+    flex-shrink: 0;
+  }
+
+  header h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.5rem;
+    line-height: 1.2;
+    color: var(--text);
+  }
+
+  header p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.2rem;
+    font-family: 'Courier New', Courier, monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 2.5rem;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(74,222,128,0.04) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: var(--surface2);
+  }
+
+  .upload-zone:hover::before, .upload-zone.drag-over::before {
+    opacity: 1;
+  }
+
+  .upload-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .upload-zone h2 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+    color: var(--text);
+  }
+
+  .upload-zone p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+
+  /* Settings bar */
+  .settings-bar {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .setting-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .setting-group label {
+    font-size: 0.75rem;
+    font-family: 'Courier New', Courier, monospace;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .setting-group input, .setting-group select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.9rem;
+    border-radius: 8px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 0.875rem;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+
+  .setting-group input:focus, .setting-group select:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .btn {
+    padding: 0.7rem 1.5rem;
+    border-radius: 8px;
+    border: none;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #0f1117;
+  }
+
+  .btn-primary:hover {
+    background: #22c55e;
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Results */
+  .results {
+    display: none;
+    margin-top: 2.5rem;
+    animation: fadeIn 0.4s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 1.1rem;
+    color: var(--text);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .section-title .badge {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* KPI cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .kpi-card:hover { border-color: var(--accent2); }
+
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .kpi-card.green::after { background: var(--accent); }
+  .kpi-card.amber::after { background: var(--accent2); }
+  .kpi-card.blue::after { background: var(--accent3); }
+  .kpi-card.red::after { background: var(--danger); }
+
+  .kpi-label {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+
+  .kpi-value {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 2.2rem;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .kpi-sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.4rem;
+  }
+
+  /* Tables */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .table-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid rgba(42,48,72,0.5);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  .pill {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 500;
+  }
+
+  .pill-red { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.3); }
+  .pill-amber { background: rgba(245,158,11,0.15); color: var(--accent2); border: 1px solid rgba(245,158,11,0.3); }
+  .pill-green { background: rgba(74,222,128,0.15); color: var(--accent); border: 1px solid rgba(74,222,128,0.3); }
+  .pill-blue { background: rgba(96,165,250,0.15); color: var(--accent3); border: 1px solid rgba(96,165,250,0.3); }
+
+  .score-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.6s ease;
+  }
+
+  .bar-fill.amber { background: var(--accent2); }
+  .bar-fill.red { background: var(--danger); }
+
+  .sortable {
+    cursor: pointer;
+    user-select: none;
+  }
+  .sortable:hover { color: var(--text); }
+  .sort-icon { font-size: 0.65rem; opacity: 0.5; margin-left: 2px; }
+  .sortable.asc .sort-icon::after { content: '▲'; }
+  .sortable.desc .sort-icon::after { content: '▼'; }
+  .sortable.asc .sort-icon, .sortable.desc .sort-icon { opacity: 1; color: var(--accent); }
+
+  .no-data {
+    text-align: center;
+    padding: 3rem;
+    color: var(--text-muted);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+  }
+
+  .unknown-flag {
+    color: var(--danger);
+    font-size: 0.8rem;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .actions-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    background: var(--surface);
+  }
+
+  .tab {
+    padding: 0.7rem 1.25rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    transition: all 0.2s;
+    border-right: 1px solid var(--border);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+
+  .tab:last-child { border-right: none; }
+  .tab.active { background: var(--surface2); color: var(--text); }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .alert-box {
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.875rem;
+    color: var(--accent2);
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .processing-msg {
+    text-align: center;
+    padding: 2rem;
+    color: var(--text-muted);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+
+  @media (max-width: 640px) {
+    main { padding: 1.5rem 1rem; }
+    header { padding: 1.5rem 1rem 1rem; }
+    .kpi-value { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">RV</div>
+  <div>
+    <h1>Retirement Village Visit Efficiency Analyser App</h1>
+    <p>Physiotherapy Schedule Optimisation &mdash; Allied Health</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div class="upload-zone" id="dropZone">
+    <input type="file" id="csvFile" accept=".csv">
+    <span class="upload-icon">📂</span>
+    <h2>Drop your CSV export here</h2>
+    <p>Drag &amp; drop your practice management software export, or click to browse</p>
+    <p style="margin-top:0.5rem; font-family:'Courier New',monospace; font-size:0.75rem; color: var(--text-dim);">Only PT services are analysed &mdash; all other disciplines filtered automatically</p>
+  </div>
+
+  <!-- Settings -->
+  <div class="settings-bar">
+    <div class="setting-group">
+      <label>Village Keywords (comma-separated)</label>
+      <input type="text" id="keywords" value="Village, Retirement">
+    </div>
+    <div class="setting-group" style="max-width: 200px;">
+      <label>Max gap for same visit (mins)</label>
+      <input type="number" id="gapMinutes" value="15" min="5" max="60">
+    </div>
+    <div class="setting-group" style="max-width: 160px; justify-content: flex-end;">
+      <label>&nbsp;</label>
+      <button class="btn btn-primary" onclick="analyse()" id="analyseBtn" disabled>Analyse</button>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+
+    <div class="actions-bar" style="justify-content: flex-end; margin-bottom: 1rem;">
+      <button class="btn btn-secondary" onclick="exportCSV('villages')">⬇ Export Villages CSV</button>
+      <button class="btn btn-secondary" onclick="exportCSV('sameProvider')">⬇ Export Same-Provider CSV</button>
+      <button class="btn btn-secondary" onclick="exportCSV('multiProvider')">⬇ Export Multi-Provider CSV</button>
+      <button class="btn btn-primary" onclick="exportCSV('all')">⬇ Export Full Report</button>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab active" onclick="showTab('overview')">Overview</button>
+      <button class="tab" onclick="showTab('villages')">Villages &amp; Clients</button>
+      <button class="tab" onclick="showTab('same-provider')">Same Provider Gaps</button>
+      <button class="tab" onclick="showTab('multi-provider')">Multi-Provider Overlap</button>
+    </div>
+
+    <!-- Overview -->
+    <div class="tab-content active" id="tab-overview">
+      <div class="kpi-grid" id="kpiGrid"></div>
+    </div>
+
+    <!-- Villages -->
+    <div class="tab-content" id="tab-villages">
+      <div class="section-title">Retirement Villages <span class="badge">PT clients only</span></div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Village / Address Group</th>
+              <th>Unique Clients</th>
+              <th>Total Visits</th>
+              <th>Clients per Visit</th>
+              <th>Efficiency</th>
+            </tr>
+          </thead>
+          <tbody id="villageTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Same provider gaps -->
+    <div class="tab-content" id="tab-same-provider">
+      <div class="section-title">Same Provider — Same Village — Different Days <span class="badge">Consolidation opportunities</span></div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Provider</th>
+              <th>Village</th>
+              <th>Days Visited</th>
+              <th>Visits to Consolidate</th>
+              <th>Priority</th>
+            </tr>
+          </thead>
+          <tbody id="sameProviderTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Multi provider -->
+    <div class="tab-content" id="tab-multi-provider">
+      <div class="section-title">Multiple Providers — Same Village — Same Day <span class="badge">Coordination opportunities</span></div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" onclick="sortMultiProvider('date')" id="sort-date">Date <span class="sort-icon">↕</span></th>
+              <th class="sortable" onclick="sortMultiProvider('village')" id="sort-village">Village <span class="sort-icon">↕</span></th>
+              <th class="sortable" onclick="sortMultiProvider('provider')" id="sort-provider">Provider <span class="sort-icon">↕</span></th>
+              <th>Client</th>
+              <th class="sortable" onclick="sortMultiProvider('time')" id="sort-time">Appt Time <span class="sort-icon">↕</span></th>
+              <th>Alerts</th>
+            </tr>
+          </thead>
+          <tbody id="multiProviderTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+let parsedData = [];
+let exportState = { villageGroups: null, sessions: null, enrichedData: null };
+let multiProviderData = []; // flat rows for sorting
+let mpSortCol = 'date', mpSortDir = 1;
+
+// --- File handling ---
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('csvFile');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    parsedData = parseCSV(e.target.result);
+    if (parsedData.length > 0) {
+      dropZone.innerHTML = `<span class="upload-icon">✅</span><h2>${file.name}</h2><p>${parsedData.length} PT service rows loaded</p>`;
+      document.getElementById('analyseBtn').disabled = false;
+    } else {
+      dropZone.innerHTML = `<span class="upload-icon">❌</span><h2>No PT services found</h2><p>Check that your CSV contains rows where Type = Service and Session Type starts with PT-</p>`;
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  // Parse CSV respecting quoted fields that may contain newlines
+  const records = [];
+  let cur = '', inQ = false, fields = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    const next = text[i + 1];
+    if (c === '"') {
+      if (inQ && next === '"') { cur += '"'; i++; } // escaped quote
+      else { inQ = !inQ; }
+    } else if (c === ',' && !inQ) {
+      fields.push(cur); cur = '';
+    } else if ((c === '\n' || c === '\r') && !inQ) {
+      if (c === '\r' && next === '\n') i++; // CRLF
+      fields.push(cur); cur = '';
+      if (fields.some(f => f.trim())) records.push(fields);
+      fields = [];
+    } else {
+      cur += c;
+    }
+  }
+  if (cur || fields.length) { fields.push(cur); if (fields.some(f => f.trim())) records.push(fields); }
+
+  if (records.length < 2) return [];
+
+  const COL = { provider:0, date:1, time:2, duration:3, type:6, client:7, session_type:12, address:16 };
+
+  const rows = [];
+  for (let i = 1; i < records.length; i++) {
+    const cols = records[i];
+    const type = (cols[COL.type] || '').toLowerCase().trim();
+    const session = (cols[COL.session_type] || '').toUpperCase().trim();
+    if (type !== 'service') continue;
+    if (!session.startsWith('PT-') && !session.startsWith('PT ')) continue;
+
+    rows.push({
+      provider: (cols[COL.provider] || '').trim(),
+      date: (cols[COL.date] || '').trim(),
+      time: (cols[COL.time] || '').trim(),
+      duration: parseInt(cols[COL.duration]) || 60,
+      client: (cols[COL.client] || '').trim(),
+      session_type: session,
+      raw_address: (cols[COL.address] || '').trim(),
+      raw_alert: (cols[COL.address] || ''), // preserve newlines for alert parsing
+    });
+  }
+  return rows;
+}
+
+function splitCSVLine(line) {
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { result.push(cur); cur = ''; }
+    else { cur += c; }
+  }
+  result.push(cur);
+  return result;
+}
+
+// --- Alert extraction ---
+function extractAlerts(raw) {
+  const text = raw.replace(/\n/g, ' ').replace(/\r/g, ' ');
+  const upper = text.toUpperCase();
+  const lower = text.toLowerCase();
+  const alerts = [];
+
+  // Colour codes — match as standalone words (may be uppercase in data)
+  if (/\bGREEN\b/.test(upper)) alerts.push('Green');
+  if (/\bORANGE\b/.test(upper)) alerts.push('Orange');
+  if (/\bYELLOW\b/.test(upper)) alerts.push('Yellow');
+  if (/\bRED\b/.test(upper)) alerts.push('Red');
+
+  // Cancelled — CANC, CANCEL, CANCELLED etc.
+  if (/\bCANC(EL|ELLED|ELED)?\b/.test(upper)) alerts.push('Cancelled');
+
+  // Gender restrictions
+  if (/female\s*(only|therapist|provider|clinician|staff|appt|appointment)?s?\s*(only)?/i.test(text)) alerts.push('Female Only');
+  if (/\bmale\s*(only|therapist|provider|clinician|staff|appt|appointment)?s?\s*(only)?/i.test(text) && !/female/i.test(text)) alerts.push('Male Only');
+
+  // Afternoon only
+  if (/afternoon\s*(appointment|appt|visit)?s?\s*(only)?/i.test(text)) alerts.push('Afternoon Only');
+
+  return alerts.join(', ');
+}
+
+// --- Analysis ---
+function analyse() {
+  const keywords = document.getElementById('keywords').value.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+  const gapMins = parseInt(document.getElementById('gapMinutes').value) || 15;
+
+  // Extract village name and street from address field
+  const data = parsedData.map(row => {
+    const addr = row.raw_address;
+    const { villageName, street } = extractAddress(addr, keywords);
+    const alerts = extractAlerts(row.raw_alert || '');
+    return { ...row, villageName, street, alerts, dateObj: parseDate(row.date), timeObj: parseTime(row.time) };
+  });
+
+  // Group into visit sessions (same provider, same village, same day, within gap)
+  const villageData = buildVillageGroups(data);
+  const visitSessions = buildVisitSessions(data, gapMins);
+
+  exportState.villageGroups = villageData;
+  exportState.sessions = visitSessions;
+  exportState.enrichedData = data;
+
+  // KPIs
+  renderKPIs(data, visitSessions);
+
+  // Village table
+  renderVillageTable(villageData, visitSessions);
+
+  // Same provider different days
+  renderSameProvider(visitSessions);
+
+  // Multi provider same day
+  renderMultiProvider(visitSessions);
+
+  document.getElementById('results').style.display = 'block';
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function extractAddress(raw, keywords) {
+  // Strip trailing notes (after 2nd comma onwards, or after known patterns like colour codes, dog, meal, etc.)
+  // Strategy: first line or up to 3 comma-separated parts
+  const clean = raw.replace(/\n/g, ', ');
+  const parts = clean.split(',').map(p => p.trim());
+
+  // Check if first part looks like a village name (contains keyword)
+  let villageName = null;
+  let street = '';
+
+  if (parts.length >= 2) {
+    const firstPart = parts[0].toLowerCase();
+    const hasKeyword = keywords.some(k => firstPart.includes(k));
+    if (hasKeyword) {
+      villageName = parts[0].trim();
+      // Street is next 1-2 parts
+      street = parts.slice(1, 3).join(', ').trim();
+      // Remove any trailing non-address info
+      street = street.replace(/[A-Z]{2,}\s*\d+.*$/, '').trim();
+    } else {
+      // No village name detected — use first 2 parts as street
+      street = parts.slice(0, 2).join(', ').trim();
+    }
+  } else {
+    street = clean.trim();
+  }
+
+  // Normalize street for matching
+  street = normalizeStreet(street);
+  return { villageName, street };
+}
+
+function normalizeStreet(s) {
+  return s.toLowerCase()
+    .replace(/\b(st|street)\b/, 'street')
+    .replace(/\b(rd|road)\b/, 'road')
+    .replace(/\b(ave|avenue)\b/, 'avenue')
+    .replace(/\b(dr|drive)\b/, 'drive')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function buildVillageGroups(data) {
+  // Groups: keyed by village name (if known) or street
+  const groups = {};
+  data.forEach(row => {
+    const key = row.villageName || row.street || 'Unknown';
+    if (!groups[key]) groups[key] = { villageName: row.villageName, street: row.street, clients: new Set(), rows: [] };
+    groups[key].clients.add(row.client);
+    groups[key].rows.push(row);
+  });
+  return groups;
+}
+
+function buildVisitSessions(data, gapMins) {
+  // Group by provider + date + village, then cluster by time gap
+  const byProviderDateVillage = {};
+  data.forEach(row => {
+    const village = row.villageName || row.street || 'Unknown';
+    const key = `${row.provider}||${row.date}||${village}`;
+    if (!byProviderDateVillage[key]) byProviderDateVillage[key] = [];
+    byProviderDateVillage[key].push(row);
+  });
+
+  const sessions = [];
+  Object.entries(byProviderDateVillage).forEach(([key, rows]) => {
+    const [provider, date, village] = key.split('||');
+    // Sort by time
+    rows.sort((a, b) => (a.timeObj || 0) - (b.timeObj || 0));
+    // Cluster
+    let cluster = [rows[0]];
+    for (let i = 1; i < rows.length; i++) {
+      const prev = cluster[cluster.length - 1];
+      const prevEnd = (prev.timeObj || 0) + (prev.duration || 60) * 60000;
+      const currStart = rows[i].timeObj || 0;
+      const gap = (currStart - prevEnd) / 60000;
+      if (gap <= gapMins) {
+        cluster.push(rows[i]);
+      } else {
+        sessions.push({ provider, date, village, rows: cluster });
+        cluster = [rows[i]];
+      }
+    }
+    sessions.push({ provider, date, village, rows: cluster });
+  });
+
+  return sessions;
+}
+
+function parseDate(d) {
+  if (!d) return null;
+  // Try DD/MM/YYYY or YYYY-MM-DD
+  const parts = d.split(/[\/\-]/);
+  if (parts.length === 3) {
+    if (parts[0].length === 4) return new Date(d);
+    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+  }
+  return new Date(d);
+}
+
+function parseTime(t) {
+  if (!t) return 0;
+  // Handle "9:00 AM", "09:00", "9:00:00 AM" etc.
+  const m = t.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+  if (!m) return 0;
+  let h = parseInt(m[1]), min = parseInt(m[2]);
+  const ampm = (m[3] || '').toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return (h * 60 + min) * 60000;
+}
+
+function renderKPIs(data, sessions) {
+  const villages = [...new Set(data.map(r => r.villageName || r.street || 'Unknown'))];
+  const totalClients = new Set(data.map(r => r.client)).size;
+  const totalSessions = sessions.length;
+  const multiClientSessions = sessions.filter(s => s.rows.length > 1).length;
+  const avgClientsPerVisit = totalSessions > 0 ? (data.length / totalSessions).toFixed(2) : 0;
+  const untagged = data.filter(r => !r.villageName).length;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card green">
+      <div class="kpi-label">Retirement Villages Detected</div>
+      <div class="kpi-value">${villages.length}</div>
+      <div class="kpi-sub">Unique locations with PT clients</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">PT Clients</div>
+      <div class="kpi-value">${totalClients}</div>
+      <div class="kpi-sub">Unique clients in dataset</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Clients per Village Visit</div>
+      <div class="kpi-value">${avgClientsPerVisit}</div>
+      <div class="kpi-sub">Higher = better schedule efficiency</div>
+    </div>
+    <div class="kpi-card ${multiClientSessions > 0 ? 'green' : 'red'}">
+      <div class="kpi-label">Clustered Visit Sessions</div>
+      <div class="kpi-value">${multiClientSessions}</div>
+      <div class="kpi-sub">of ${totalSessions} total visit sessions saw 2+ clients</div>
+    </div>
+    <div class="kpi-card ${untagged > 0 ? 'red' : 'green'}">
+      <div class="kpi-label">Untagged PT Rows</div>
+      <div class="kpi-value">${untagged}</div>
+      <div class="kpi-sub">Addresses missing village name</div>
+    </div>
+  `;
+}
+
+function renderVillageTable(groups, sessions) {
+  const tbody = document.getElementById('villageTable');
+  // Only show villages identified via keyword detection (villageName present)
+  const entries = Object.entries(groups).filter(([key, g]) => g.villageName);
+  if (!entries.length) { tbody.innerHTML = '<tr><td colspan="5" class="no-data">No retirement villages found in dataset</td></tr>'; return; }
+
+  entries.sort((a, b) => b[1].clients.size - a[1].clients.size);
+
+  tbody.innerHTML = entries.map(([key, g]) => {
+    const villageSessions = sessions.filter(s => s.village === key);
+    const totalVisits = villageSessions.length;
+    const uniqueClients = g.clients.size;
+    const ratio = totalVisits > 0 ? (uniqueClients / totalVisits).toFixed(2) : '-';
+    const ratioNum = parseFloat(ratio);
+    const barPct = Math.min(100, ratioNum * 33);
+    const barClass = ratioNum >= 2 ? '' : ratioNum >= 1.3 ? 'amber' : 'red';
+    const pillClass = ratioNum >= 2 ? 'pill-green' : ratioNum >= 1.3 ? 'pill-amber' : 'pill-red';
+    const label = ratioNum >= 2 ? 'Good' : ratioNum >= 1.3 ? 'Fair' : 'Low';
+
+    return `<tr>
+      <td>
+        <div style="font-weight:500">${g.villageName || '<span style="color:var(--text-muted);font-style:italic">'+key+'</span>'}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);font-family:'Courier New',monospace">${g.street || ''}</div>
+      </td>
+      <td>${uniqueClients}</td>
+      <td>${totalVisits}</td>
+      <td style="font-family:'Courier New',monospace;font-weight:500">${ratio}</td>
+      <td>
+        <div class="score-bar">
+          <div class="bar-track"><div class="bar-fill ${barClass}" style="width:${barPct}%"></div></div>
+          <span class="pill ${pillClass}">${label}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderUntagged(data, groups) {
+  const tbody = document.getElementById('untaggedTable');
+
+  // Build a map of known village streets → village name
+  // Only streets that are explicitly linked to a named village count
+  const villageStreets = {};
+  Object.entries(groups).forEach(([key, g]) => {
+    if (g.villageName && g.street) villageStreets[g.street] = g.villageName;
+  });
+
+  // Only flag clients with NO village name whose street exactly matches a known village street
+  const seen = new Set();
+  const flagged = data
+    .filter(r => !r.villageName && r.street && villageStreets[r.street])
+    .filter(r => {
+      const k = `${r.client}||${r.raw_address}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    })
+    .map(r => ({ ...r, likelyVillage: villageStreets[r.street] }));
+
+  if (!flagged.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="no-data">✅ No untagged village addresses detected</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = flagged.map(r => `<tr>
+    <td style="font-weight:500">${r.client}</td>
+    <td style="font-family:'Courier New',monospace;font-size:0.78rem">${r.raw_address.substring(0,80)}${r.raw_address.length>80?'…':''}</td>
+    <td><span class="pill pill-amber">${r.likelyVillage}</span></td>
+    <td style="color:var(--text-muted);font-size:0.8rem">${r.provider}</td>
+  </tr>`).join('');
+}
+
+function renderSameProvider(sessions) {
+  const tbody = document.getElementById('sameProviderTable');
+  // Only include sessions at keyword-detected villages
+  const filteredSessions = sessions.filter(s => {
+    const g = exportState.villageGroups && exportState.villageGroups[s.village];
+    return g && g.villageName;
+  });
+
+  // Group by provider + village
+  const byPV = {};
+  filteredSessions.forEach(s => {
+    const key = `${s.provider}||${s.village}`;
+    if (!byPV[key]) byPV[key] = { provider: s.provider, village: s.village, dates: new Set(), totalVisits: 0 };
+    byPV[key].dates.add(s.date);
+    byPV[key].totalVisits++;
+  });
+
+  const opportunities = Object.values(byPV).filter(g => g.dates.size > 1).sort((a, b) => b.dates.size - a.dates.size);
+
+  if (!opportunities.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="no-data">✅ No same-provider multi-day opportunities found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = opportunities.map(g => {
+    const days = g.dates.size;
+    const pillClass = days >= 4 ? 'pill-red' : days >= 2 ? 'pill-amber' : 'pill-green';
+    const priority = days >= 4 ? 'High' : days >= 2 ? 'Medium' : 'Low';
+    return `<tr>
+      <td style="font-weight:500">${g.provider}</td>
+      <td>${g.village}</td>
+      <td style="font-family:'Courier New',monospace;font-size:0.8rem">${[...g.dates].sort().join('<br>')}</td>
+      <td style="text-align:center">${g.totalVisits}</td>
+      <td><span class="pill ${pillClass}">${priority}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMultiProvider(sessions) {
+  // Only include sessions at keyword-detected villages
+  const rvSessions = sessions.filter(s => {
+    const g = exportState.villageGroups && exportState.villageGroups[s.village];
+    return g && g.villageName;
+  });
+
+  // Build flat rows for sorting
+  const byDV = {};
+  rvSessions.forEach(s => {
+    const key = `${s.date}||${s.village}`;
+    if (!byDV[key]) byDV[key] = { date: s.date, village: s.village, providers: new Set(), sessions: [] };
+    byDV[key].providers.add(s.provider);
+    byDV[key].sessions.push(s);
+  });
+
+  multiProviderData = [];
+  Object.values(byDV).filter(g => g.providers.size > 1).forEach(g => {
+    g.sessions.forEach(s => {
+      s.rows.forEach(r => {
+        multiProviderData.push({
+          date: g.date,
+          village: g.village,
+          provider: s.provider,
+          client: r.client,
+          time: r.time,
+          timeObj: parseTime(r.time),
+          alerts: r.alerts || ''
+        });
+      });
+    });
+  });
+
+  renderMultiProviderTable();
+}
+
+function sortMultiProvider(col) {
+  if (mpSortCol === col) {
+    mpSortDir *= -1;
+  } else {
+    mpSortCol = col;
+    mpSortDir = 1;
+  }
+  // Update header indicators
+  document.querySelectorAll('.sortable').forEach(th => {
+    th.classList.remove('asc', 'desc');
+    th.querySelector('.sort-icon').textContent = '↕';
+  });
+  const activeHeader = document.getElementById(`sort-${col}`);
+  if (activeHeader) {
+    activeHeader.classList.add(mpSortDir === 1 ? 'asc' : 'desc');
+    activeHeader.querySelector('.sort-icon').textContent = '';
+  }
+  renderMultiProviderTable();
+}
+
+function renderMultiProviderTable() {
+  const tbody = document.getElementById('multiProviderTable');
+  if (!multiProviderData.length) {
+    tbody.innerHTML = '<tr><td colspan="6" class="no-data">✅ No multi-provider same-day opportunities found</td></tr>';
+    return;
+  }
+
+  const sorted = [...multiProviderData].sort((a, b) => {
+    let va = a[mpSortCol] || '', vb = b[mpSortCol] || '';
+    if (mpSortCol === 'time') { va = a.timeObj; vb = b.timeObj; }
+    if (typeof va === 'string') return va.localeCompare(vb) * mpSortDir;
+    return (va - vb) * mpSortDir;
+  });
+
+  // Group consecutive rows with same date+village for visual grouping
+  const rows = [];
+  let lastKey = null;
+  sorted.forEach(r => {
+    const key = `${r.date}||${r.village}`;
+    const isNewGroup = key !== lastKey && mpSortCol === 'date';
+    if (isNewGroup && lastKey !== null) {
+      rows.push(`<tr style="height:4px"><td colspan="6" style="background:var(--border);padding:0"></td></tr>`);
+    }
+    const alertBadges = r.alerts
+      ? r.alerts.split(', ').map(a => {
+          const cls = a === 'Red' ? 'pill-red' : a === 'Cancelled' ? 'pill-red' : a === 'Female Only' || a === 'Male Only' ? 'pill-blue' : a === 'Afternoon Only' ? 'pill-amber' : 'pill-green';
+          return `<span class="pill ${cls}" style="margin-right:2px">${a}</span>`;
+        }).join('')
+      : '';
+    rows.push(`<tr>
+      <td style="font-family:'Courier New',monospace;font-size:0.8rem">${r.date}</td>
+      <td>${r.village}</td>
+      <td style="font-size:0.85rem">${r.provider}</td>
+      <td style="font-weight:500">${r.client}</td>
+      <td style="font-family:'Courier New',monospace;font-size:0.8rem">${r.time}</td>
+      <td>${alertBadges}</td>
+    </tr>`);
+    lastKey = key;
+  });
+
+  tbody.innerHTML = rows.join('');
+}
+
+function renderKPIs(data, sessions) {
+  const knownVillages = [...new Set(data.filter(r => r.villageName).map(r => r.villageName))];
+
+  // RV-only rows and sessions
+  const rvData = data.filter(r => r.villageName);
+  const rvSessions = sessions.filter(s => {
+    const g = exportState.villageGroups[s.village];
+    return g && g.villageName;
+  });
+
+  const totalRVServices = rvData.length;
+  const totalRVClients = new Set(rvData.map(r => r.client)).size;
+  const totalRVSessions = rvSessions.length;
+  const multiClientSessions = rvSessions.filter(s => s.rows.length > 1).length;
+
+  // Clients per visit — exclude villages with only one client (can't group what isn't there)
+  const multiClientVillages = Object.entries(exportState.villageGroups)
+    .filter(([key, g]) => g.villageName && g.clients.size > 1)
+    .map(([key]) => key);
+  const multiClientRVSessions = rvSessions.filter(s => multiClientVillages.includes(s.village));
+  const multiClientRVData = rvData.filter(r => multiClientVillages.includes(r.villageName || r.street || 'Unknown'));
+  const avgCPV = multiClientRVSessions.length > 0
+    ? (multiClientRVData.length / multiClientRVSessions.length).toFixed(2)
+    : '—';
+  const cpvSessionCount = multiClientRVSessions.length;
+
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi-card green">
+      <div class="kpi-label">Villages Identified</div>
+      <div class="kpi-value">${knownVillages.length}</div>
+      <div class="kpi-sub">Named retirement villages in dataset</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">PT RV Services</div>
+      <div class="kpi-value">${totalRVServices}</div>
+      <div class="kpi-sub">${totalRVClients} unique RV clients</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">Clients per Village Visit</div>
+      <div class="kpi-value">${avgCPV}</div>
+      <div class="kpi-sub">Across ${cpvSessionCount} RV sessions (2+ client villages only)</div>
+    </div>
+    <div class="kpi-card ${multiClientSessions > 0 ? 'green' : 'amber'}">
+      <div class="kpi-label">Clustered Sessions</div>
+      <div class="kpi-value">${multiClientSessions}</div>
+      <div class="kpi-sub">of ${totalRVSessions} RV sessions saw 2+ clients</div>
+    </div>
+  `;
+}
+
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelector(`#tab-${name}`).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// --- Export ---
+function toCSV(rows) {
+  return rows.map(row => row.map(cell => {
+    const s = String(cell == null ? '' : cell).replace(/"/g, '""');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+  }).join(',')).join('\n');
+}
+
+function downloadCSV(filename, content) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportCSV(type) {
+  const { villageGroups, sessions, enrichedData } = exportState;
+  if (!villageGroups) { alert('Run analysis first.'); return; }
+  const date = new Date().toISOString().slice(0,10);
+
+  if (type === 'villages' || type === 'all') {
+    const rows = [['Village Name', 'Street', 'Unique Clients', 'Total Visit Sessions', 'Clients per Visit', 'Efficiency']];
+    Object.entries(villageGroups)
+      .filter(([key, g]) => g.villageName)
+      .forEach(([key, g]) => {
+        const vs = sessions.filter(s => s.village === key);
+        const ratio = vs.length > 0 ? (g.clients.size / vs.length).toFixed(2) : '-';
+        const eff = parseFloat(ratio) >= 2 ? 'Good' : parseFloat(ratio) >= 1.3 ? 'Fair' : 'Low';
+        rows.push([g.villageName, g.street || '', g.clients.size, vs.length, ratio, eff]);
+      });
+    if (type === 'villages') { downloadCSV(`villages_${date}.csv`, toCSV(rows)); return; }
+  }
+
+  if (type === 'untagged' || type === 'all') {
+    const villageStreets = {};
+    Object.entries(villageGroups).forEach(([key, g]) => { if (g.villageName && g.street) villageStreets[g.street] = g.villageName; });
+    const seen = new Set();
+    const rows = [['Client', 'Raw Address', 'Likely Village Match', 'Provider']];
+    enrichedData
+      .filter(r => !r.villageName && r.street && villageStreets[r.street])
+      .forEach(r => {
+        const k = `${r.client}||${r.raw_address}`;
+        if (seen.has(k)) return; seen.add(k);
+        rows.push([r.client, r.raw_address, villageStreets[r.street], r.provider]);
+      });
+    if (type === 'untagged') { downloadCSV(`untagged_addresses_${date}.csv`, toCSV(rows)); return; }
+  }
+
+  if (type === 'sameProvider' || type === 'all') {
+    const filteredSessions = sessions.filter(s => {
+      const g = villageGroups[s.village];
+      return g && g.villageName;
+    });
+    const byPV = {};
+    filteredSessions.forEach(s => {
+      const key = `${s.provider}||${s.village}`;
+      if (!byPV[key]) byPV[key] = { provider: s.provider, village: s.village, dates: new Set(), totalVisits: 0 };
+      byPV[key].dates.add(s.date);
+      byPV[key].totalVisits++;
+    });
+    const rows = [['Provider', 'Village', 'Days Visited', 'Day List', 'Total Visits', 'Priority']];
+    Object.values(byPV).filter(g => g.dates.size > 1).sort((a,b) => b.dates.size - a.dates.size).forEach(g => {
+      const days = g.dates.size;
+      const priority = days >= 4 ? 'High' : 'Medium';
+      rows.push([g.provider, g.village, days, [...g.dates].sort().join('; '), g.totalVisits, priority]);
+    });
+    if (type === 'sameProvider') { downloadCSV(`same_provider_gaps_${date}.csv`, toCSV(rows)); return; }
+  }
+
+  if (type === 'multiProvider' || type === 'all') {
+    const byDV = {};
+    sessions.filter(s => { const g = villageGroups[s.village]; return g && g.villageName; }).forEach(s => {
+      const key = `${s.date}||${s.village}`;
+      if (!byDV[key]) byDV[key] = { date: s.date, village: s.village, providers: new Set(), sessions: [] };
+      byDV[key].providers.add(s.provider);
+      byDV[key].sessions.push(s);
+    });
+    const rows = [['Date', 'Village', 'Provider', 'Client', 'Appointment Time', 'Alerts']];
+    Object.values(byDV)
+      .filter(g => g.providers.size > 1)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .forEach(g => {
+        g.sessions.sort((a, b) => a.provider.localeCompare(b.provider));
+        g.sessions.forEach(s => {
+          s.rows.forEach(r => {
+            rows.push([g.date, g.village, s.provider, r.client, r.time, r.alerts || '']);
+          });
+        });
+      });
+    if (type === 'multiProvider') { downloadCSV(`multi_provider_overlap_${date}.csv`, toCSV(rows)); return; }
+  }
+
+  if (type === 'all') {
+    // Build a combined workbook-style CSV with sections
+    const sections = [];
+
+    // Summary — RV-only metrics
+    const rvData = enrichedData.filter(r => r.villageName);
+    const rvSessions = sessions.filter(s => villageGroups[s.village] && villageGroups[s.village].villageName);
+    const totalRVSessions = rvSessions.length;
+    const multiClient = rvSessions.filter(s => s.rows.length > 1).length;
+    const avgCPV = totalRVSessions > 0 ? (rvData.length / totalRVSessions).toFixed(2) : 0;
+    sections.push('SUMMARY');
+    sections.push(toCSV([
+      ['PT RV Services', 'Unique RV Clients', 'RV Visit Sessions', 'Clustered Sessions', 'Avg Clients per RV Visit'],
+      [rvData.length, new Set(rvData.map(r=>r.client)).size, totalRVSessions, multiClient, avgCPV]
+    ]));
+
+    sections.push('\nVILLAGES');
+    const vRows = [['Village Name','Street','Unique Clients','Total Visit Sessions','Clients per Visit','Efficiency']];
+    Object.entries(villageGroups)
+      .filter(([key, g]) => g.villageName)
+      .forEach(([key, g]) => {
+        const vs = sessions.filter(s => s.village === key);
+        const ratio = vs.length > 0 ? (g.clients.size / vs.length).toFixed(2) : '-';
+        const eff = parseFloat(ratio) >= 2 ? 'Good' : parseFloat(ratio) >= 1.3 ? 'Fair' : 'Low';
+        vRows.push([g.villageName, g.street||'', g.clients.size, vs.length, ratio, eff]);
+      });
+    sections.push(toCSV(vRows));
+
+    sections.push('\nUNTAGGED ADDRESSES');
+    const villageStreets = {};
+    Object.entries(villageGroups).forEach(([key, g]) => { if (g.villageName && g.street) villageStreets[g.street] = g.villageName; });
+    const seen = new Set();
+    const uRows = [['Client','Raw Address','Likely Village Match','Provider']];
+    enrichedData
+      .filter(r => !r.villageName && r.street && villageStreets[r.street])
+      .forEach(r => {
+        const k = `${r.client}||${r.raw_address}`;
+        if (seen.has(k)) return; seen.add(k);
+        uRows.push([r.client, r.raw_address, villageStreets[r.street], r.provider]);
+      });
+    sections.push(toCSV(uRows));
+
+    sections.push('\nSAME PROVIDER GAPS');
+    const byPV = {};
+    sessions.forEach(s => {
+      const key = `${s.provider}||${s.village}`;
+      if (!byPV[key]) byPV[key] = { provider: s.provider, village: s.village, dates: new Set(), totalVisits: 0 };
+      byPV[key].dates.add(s.date); byPV[key].totalVisits++;
+    });
+    const spRows = [['Provider','Village','Days Visited','Day List','Total Visits','Priority']];
+    Object.values(byPV).filter(g => g.dates.size > 1).sort((a,b)=>b.dates.size-a.dates.size).forEach(g => {
+      spRows.push([g.provider, g.village, g.dates.size, [...g.dates].sort().join('; '), g.totalVisits, g.dates.size>=4?'High':'Medium']);
+    });
+    sections.push(toCSV(spRows));
+
+    sections.push('\nMULTI-PROVIDER OVERLAP');
+    const byDV2 = {};
+    sessions.filter(s => villageGroups[s.village] && villageGroups[s.village].villageName).forEach(s => {
+      const key = `${s.date}||${s.village}`;
+      if (!byDV2[key]) byDV2[key] = { date: s.date, village: s.village, providers: new Set(), sessions: [] };
+      byDV2[key].providers.add(s.provider);
+      byDV2[key].sessions.push(s);
+    });
+    const mpRows = [['Date','Village','Provider','Client','Appointment Time','Alerts']];
+    Object.values(byDV2)
+      .filter(g => g.providers.size > 1)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .forEach(g => {
+        g.sessions.sort((a, b) => a.provider.localeCompare(b.provider));
+        g.sessions.forEach(s => {
+          s.rows.forEach(r => {
+            mpRows.push([g.date, g.village, s.provider, r.client, r.time, r.alerts || '']);
+          });
+        });
+      });
+    sections.push(toCSV(mpRows));
+
+    downloadCSV(`village_efficiency_report_${date}.csv`, sections.join('\n'));
+  }
+}
+</script>
+</body>
+</html>
