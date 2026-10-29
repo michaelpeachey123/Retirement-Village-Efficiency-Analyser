@@ -693,7 +693,7 @@ function parseCSV(text) {
       provider: (cols[COL.provider] || '').trim(),
       date: (cols[COL.date] || '').trim(),
       time: (cols[COL.time] || '').trim(),
-      duration: parseInt(cols[COL.duration]) || 60,
+      duration: parseDurationMins(cols[COL.duration]) || 60,
       client: (cols[COL.client] || '').trim(),
       session_type: session,
       raw_address: (cols[COL.address] || '').trim(),
@@ -701,6 +701,16 @@ function parseCSV(text) {
     });
   }
   return rows;
+}
+
+// Nookal writes Appt Duration as H:MM:SS (e.g. 0:30:00, 1:15:00). parseInt read these as 0 (so 60 min) or 1 minute.
+function parseDurationMins(raw) {
+  const s = String(raw || '').trim();
+  const p = s.split(':').map(Number);
+  if (p.length === 3 && p.every(n => !isNaN(n))) return p[0] * 60 + p[1] + p[2] / 60;
+  if (p.length === 2 && p.every(n => !isNaN(n))) return p[0] * 60 + p[1];
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n; // plain number = minutes, as before
 }
 
 function splitCSVLine(line) {
